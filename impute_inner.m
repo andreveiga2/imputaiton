@@ -27,7 +27,7 @@ function [ r_predicted_ij ] = impute_inner(predictors, target, predict_at, metho
 %%
 
 
-nr_trees = 200;         % nubmer of trees in RF
+nr_trees = 1000;         % number of trees in RF
 
 
 %% random forest with continuous t as input
@@ -38,16 +38,20 @@ nr_trees = 200;         % nubmer of trees in RF
 % this is currently the best and also the most flexible model
 % it's also very easy to code
 if isequal(method, 'RF')
-    trained_model_ij = TreeBagger(nr_trees, predictors, target, 'Method', 'regression');
+    [r,~] = size(predictors); % Step 1
+    randomRowIdxs = randperm(r); % Step 2
+    shuffled_predictors = predictors(randomRowIdxs,:);
+    shuffled_target = target(randomRowIdxs);
+    trained_model_ij = TreeBagger(nr_trees, shuffled_predictors, shuffled_target, 'Method', 'regression', 'NumPredictorsToSample','all');
     r_predicted_ij = predict(trained_model_ij, predict_at);
+
+    
 end
 
+% view(trained_model_ij.Trees{1},'mode','graph')
 
 
-
-
-
-%% function to create dummy variables 
+%% function to create dummy variables
 
 % the native matlab function doesnt work well, it creates dummies even for
 % values which do not occur in the input vector
@@ -85,23 +89,51 @@ end
 
 
 if isequal(method, 'NN')
-    inputs = [phi_ij, time_ij];
-    targets = r_ij_obs;
+    inputs = predictors;
+    targets = target;
     
     % Create a Fitting Network
-    hiddenLayerSize = 10;
-    net = fitnet(hiddenLayerSize);
-    
-    % Set up Division of Data for Training, Validation, Testing
-    net.divideParam.trainRatio = 70/100;
-    net.divideParam.valRatio = 15/100;
-    net.divideParam.testRatio = 15/100;
+    trainFcn = 'trainlm';  % Levenberg-Marquardt backpropagation.
+
+    hiddenLayerSize1 = 12;
+    hiddenLayerSize2 = 12;
+    net = fitnet([hiddenLayerSize1,hiddenLayerSize2],trainFcn);
+    net.trainParam.epochs=5; %more epochs
+
+    % Choose Input and Output Pre/Post-Processing Functions
+    % For a list of all processing functions type: help nnprocess
+    net.input.processFcns = {'removeconstantrows','mapminmax'};
+    net.output.processFcns = {'removeconstantrows','mapminmax'};
+
+    % Setup Division of Data for Training, Validation, Testing
+    % For a list of all data division functions type: help nndivide
+    net.divideFcn = 'dividerand';  % Divide data randomly
+    net.divideMode = 'sample';  % Divide up every sample
+    net.divideParam.trainRatio = 80/100;
+    net.divideParam.valRatio = 10/100;
+    net.divideParam.testRatio = 10/100;
+
+    % Choose a Performance Function
+    % For a list of all performance functions type: help nnperformance
+    net.performFcn = 'mse';  % Mean Squared Error
+
+%    %Training Parameters
+%    %net.trainParam.show=1;  %# of ephocs in display
+%     %net.trainParam.epochs=10000;  %max epochs
+% 
+%         % Choose Plot Functions
+%         % For a list of all plot functions type: help nnplot
+%         net.plotFcns = {'plotperform','plottrainstate','ploterrhist', ...
+%             'plotregression', 'plotfit'};
+% 
+%         % Train the Network
+          % Test the Network
     
     % Train the Network
     [net,tr] = train(net,inputs,targets);
     
-    net
-    tr
+    % Test the Network
+    r_predicted_ij = net(predict_at);
 end
 
 
@@ -247,8 +279,11 @@ end
 
 
 if isequal(method, 'spline')
-    % Chaitanya, please fill this in
-    r_predicted_ij = NaN;
+    % Chaitanya, please fill this in    
+    size(predictors)
+    size(target)
+    size(predict_at)
+    r_predicted_ij = interpn(predictors,target,predict_at,'cubic', -1);
 end
 
 
