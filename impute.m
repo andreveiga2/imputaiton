@@ -16,7 +16,7 @@ function [ xx ] = impute( g_nr, phi, time, decision,  obs_r0, obs_r5, obs_r10, m
 % load('data/data_gar.mat');
 GAR_levels = [ 0, 5, 10 ];
 
-% convert missing values to NaN
+% convert missing values to NaN, only for visualizing 
 obs_r0(obs_r0 == 9.99) = NaN;
 obs_r5(obs_r5 == 9.99) = NaN;
 obs_r10(obs_r10 == 9.99) = NaN;
@@ -45,8 +45,8 @@ for i=[1,2,3,4]
         gar_j = GAR_levels(j);
         
         % g_nr_j = group number for individuals who buy j (from any group)
-        jjj = (decision==gar_j);
-        [g_nr_j, phi_j, time_j] = deal(g_nr(jjj), phi(jjj), time(jjj));
+        %jjj = (decision==gar_j);
+        %[g_nr_j, phi_j, time_j] = deal(g_nr(jjj), phi(jjj), time(jjj));
     
         % individuals from group i who buy j
         ijij = (g_nr==i & decision==gar_j); 
@@ -55,29 +55,34 @@ for i=[1,2,3,4]
         
         % depending on the garantee under study, take a different vector of the "observed garantee"
         % there should be a more elegant way of doing this
-        if      gar_j==0;    r_ij = obs_r0(ijij);    rj = obs_r0(jjj);
-        elseif  gar_j==5;    r_ij = obs_r5(ijij);    rj = obs_r5(jjj);
-        elseif  gar_j==10;   r_ij = obs_r10(ijij);   rj = obs_r10(jjj);
+%         if      gar_j==0;    r_ij = obs_r0(ijij);    rj = obs_r0(jjj);
+%         elseif  gar_j==5;    r_ij = obs_r5(ijij);    rj = obs_r5(jjj);
+%         elseif  gar_j==10;   r_ij = obs_r10(ijij);   rj = obs_r10(jjj);
+%         end
+%         
+        
+        if      gar_j==0;    r_ij = obs_r0(ijij);   
+        elseif  gar_j==5;    r_ij = obs_r5(ijij);   
+        elseif  gar_j==10;   r_ij = obs_r10(ijij);
         end
         
-        
         % in any case, we always predict for group i, contract j
-        if 1==0
-            % here training data is everyone who bought contract j
-            % there is variation within g_nr_j
-            % this method requires a bigger number of trees
-            predictors = [g_nr_j, phi_j, time_j];
-            target = rj;
-            predict_at = [g_nr_i, phi_i, time_i];
-        else
-            % here training data is only individuals of group i who bough contract j
+%         if 1==0
+%             % here training data is everyone who bought contract j
+%             % there is variation within g_nr_j
+%             % this method requires a bigger number of trees
+%             predictors = [g_nr_j, phi_j, time_j];
+%             target = rj;
+%             predict_at = [g_nr_i, phi_i, time_i];
+%         else
+%             % here training data is only individuals of group i who bough contract j
             % here there is NO VARIATION within g_nr_ij. ideally we'd take
             % them out but it's in here otherwise the code breaks
             % this seems to do better than the one above.
-            predictors = [phi_ij, time_ij];                 % input for training
-            target = r_ij;                                  % output for training
-            predict_at = [phi_i, time_i];                   % input for prediction
-        end
+        predictors = [phi_ij, time_ij];                 % input for training
+        target = r_ij;                                  % output for training
+        predict_at = [phi_i, time_i];                   % input for prediction
+        %end
         
         [ r_predicted_ij ] = impute_inner(predictors, target, predict_at, method );
         
