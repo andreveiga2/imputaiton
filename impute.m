@@ -25,6 +25,7 @@ obs_r10(obs_r10 == 9.99) = NaN;
 % the imputed rates
 [r0, r5, r10] = deal(NaN(size(g_nr)));
 
+Allvalues = [];
 
 % loop through the 4 groups of consumers
 % groups of consumers are indexed with i
@@ -83,9 +84,8 @@ for i=[1,2,3,4]
         target = r_ij;                                  % output for training
         predict_at = [phi_i, time_i];                   % input for prediction
         %end
-        
         [ r_predicted_ij ] = impute_inner(predictors, target, predict_at, method );
-        
+                
         if ~isequal(size(r_predicted_ij), size(g_nr_i)); error('...'); end
         
         
@@ -122,7 +122,7 @@ for i=[1,2,3,4]
     xx.group(i).r10 = r10( g_nr==i  );
 end
 
-
+%csvwrite("file_b.csv", Allvalues);
 return
 
 

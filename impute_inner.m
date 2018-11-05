@@ -27,7 +27,7 @@ function [ r_predicted_ij ] = impute_inner(predictors, target, predict_at, metho
 %%
 
 
-nr_trees = 1000;         % number of trees in RF
+nr_trees = 1;         % number of trees in RF
 
 
 %% random forest with continuous t as input
