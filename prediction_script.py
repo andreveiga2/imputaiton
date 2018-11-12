@@ -50,7 +50,7 @@ def load_data(filename):
 
     Returns
     -------
-    None
+    data: pandas dataframe for visualization purposes
 
     Raises
     ------
@@ -66,14 +66,17 @@ def load_data(filename):
     for i in list(data):
         csv_data[i] = data[i]
 
+    return data
+
 
 # we define a global StandardScaler object because we want to use the same scaling
 # operation during both training and testing time
 scaler = StandardScaler()
 
-def create_training_set(training_variables_type = 4):
+def create_training_set(training_variables_type = 4, split_percentage = 0.08):
     """
-    Function to split csv data into a training X and Y
+    Function to split csv data into a training X and Y and test X and Y
+    Standardize features by removing the mean and scaling to unit variance
 
     Parameters
     ----------
@@ -83,6 +86,9 @@ def create_training_set(training_variables_type = 4):
                              if 3 then use training_variables_new
                              if 4 then use training_variables_large
 
+    split_percentage: int, Default 0.08,
+                      define the test set proportion
+                      Example if 0.08, then training set is 92% and test set is 8%
     Returns
     ----------
     X_train: predictor data for training
@@ -142,7 +148,7 @@ def create_training_set(training_variables_type = 4):
     except ValueError as e:
         print(e.args)
 
-    for i in training_variables_large:
+    for i in training_variables:
         training_X = np.column_stack((training_X, csv_data[i]))
 
     # Standardize features by removing the mean and scaling to unit variance
@@ -152,7 +158,7 @@ def create_training_set(training_variables_type = 4):
     # Split the data into two sets, of 92% training set versus 8% test set,
     # this is done to check the accuracy of the data on unseen data
     # it may make sense to also plot how the operation does on training data to measure training Accuracy
-    X_train, X_test, y_train, y_test = train_test_split(scaled_X, training_Y, test_size = 0.08, random_state = 0)
+    X_train, X_test, y_train, y_test = train_test_split(scaled_X, training_Y, test_size = split_percentage, random_state = 0)
 
     return (X_train, X_test, y_train, y_test)
 
@@ -370,7 +376,7 @@ def prediction(X_train, X_test, y_train, y_test):
         if (plot_prediction_0[i] < plot_prediction_5[i]) or (plot_prediction_5[i] < plot_prediction_10[i]):
                 count+=1
 
-    print "Count: ",count," out of ", len(plot_prediction_0)
+    print("Count: "+str(count)+" out of "+str(len(plot_prediction_0)))
 
     fig, ax = plt.subplots()
     ax.plot(phi, plot_prediction_0,label = 'decision_0')
@@ -395,7 +401,7 @@ def prediction(X_train, X_test, y_train, y_test):
 
 
 
-load_data("data_JMP_impute.csv")
-(X_train, X_test, y_train, y_test) = create_training_set()
-#print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
-prediction(X_train, X_test, y_train, y_test)
+# load_data("data_JMP_impute.csv")
+# (X_train, X_test, y_train, y_test) = create_training_set()
+# #print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
+# prediction(X_train, X_test, y_train, y_test)
