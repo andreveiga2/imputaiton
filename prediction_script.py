@@ -1,69 +1,44 @@
-import csv
-import numpy as np
-from sklearn.svm import SVR
-import matplotlib.pyplot as plt
-import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import Normalizer
-from sklearn.preprocessing import StandardScaler
-
-import sklearn.cluster as cluster
-import sklearn.mixture as mixture
-from sklearn import datasets
-from sklearn.model_selection import cross_val_predict
-from sklearn import linear_model
-import matplotlib.pyplot as plt
-from sklearn.model_selection import cross_val_score
-from sklearn import metrics
-from sklearn import svm
-from sklearn.model_selection import KFold
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.neural_network import MLPRegressor
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.datasets import make_regression
-import sklearn.decomposition as decomp
-from sklearn.model_selection import train_test_split
-import scipy.io as sio
-import numpy as np
-from scipy import stats
+"""
+Code by Chaitanya Baweja
+Created: 8th November
+Updated: 12th November
+"""
+#All Import Libraries
+import numpy as np # Handling matrix operations
+import matplotlib.pyplot as plt #all plotting functions
+import pandas as pd #reading and writing from csv
+from sklearn.preprocessing import StandardScaler #for scaling data
+from sklearn.neural_network import MLPRegressor #mlp regressor used for prediction
+from sklearn.model_selection import train_test_split #splitting data into train and test set
 
 #this dictionary will contain all csv data from excel
 csv_data = {}
 
-'''
-Docstyle to follow
-"""
-My numpydoc description of a kind
-of very exhautive numpydoc format docstring.
-
-Parameters
-----------
-first : array_like
-    the 1st param name `first`
-second :
-    the 2nd param
-third : {'value', 'other'}, optional
-    the 3rd param, by default 'value'
-
-Returns
--------
-string
-    a value in a string
-
-Raises
-------
-KeyError
-    when a key error
-OtherError
-    when an other error
-"""
-'''
 def accuracy(y, pred_y):
-    #mean absolute percentage error
-    acc = sum(abs((y-pred_y)/y))/len(y)
-    return (acc)*100;
+    """
+    Function to calculate mean absolute percentage error
+
+    Parameters
+    ----------
+    y : array_like (list)
+        contains ground_truth
+    pred_y : array_like (list)
+             predictions from model
+    Returns
+    -------
+    a float giving mean absolute percentage error
+
+    Raises
+    ------
+    ZeroDivisionError
+        when y has a zero
+    """
+    try:
+        acc = sum(abs((y-pred_y)/y))/len(y)
+        return (acc)*100;
+    except ZeroDivisionError:
+        print("Rate can't be zero", y)
+
 
 def load_data(filename):
     """
@@ -87,33 +62,40 @@ def load_data(filename):
     except IOError:
         print('Cannot open ', filename)
 
+    #to copy all columns read in data to csv_data dictionary
     for i in list(data):
         csv_data[i] = data[i]
 
-# this can be used to load data in csv_data
-#load_data("data_JMP_impute.csv")
-sc = StandardScaler()
 
-def create_training_set(small = True):
+# we define a global StandardScaler object because we want to use the same scaling
+# operation during both training and testing time
+scaler = StandardScaler()
+
+def create_training_set(training_variables_type = 4):
     """
     Function to split csv data into a training X and Y
 
     Parameters
     ----------
-    small: bool, Default True,
-           if small is True then smaller set of decision variables are used
+    training_variables_type: int, Default 4,
+                             if 1 then use training_variables_smallest
+                             if 2 then use training_variables_small
+                             if 3 then use training_variables_new
+                             if 4 then use training_variables_large
 
     Returns
     ----------
-    training X: predictor data for training
-    training_Y: target for training
+    X_train: predictor data for training
+    y_train: target for training
+    X_test: predictor data for testin/g
+    y_test: target for testing
 
     Raises
     ----------
-    None
+    ValueError if wrong type is given as argument
     """
-    global sc
-    # two categories for preddictors
+    global scaler
+
     #('Lowest Error: (', 'logistic', 'adam', 10, 0.060000000000000005, 6.550900586097088)
     #('Lowest Error: (', 'relu', 'adam', 100, 0.09999999999999999, 6.920795721270003)
     # The best that we have:
@@ -122,10 +104,13 @@ def create_training_set(small = True):
     #('Lowest Error: (', 'relu', 'adam', 100, 0.04, 0.0004, 4.448231151896966)
 
 
+    # only use phi and decision_gar as features
     training_variables_smallest = ['decision_gar']
+    # use the first few features
     training_variables_small = ['dd_freq_m', 'dd_freq_q', 'dd_freq_h', 'phi', 'decision_gar']
+    # experimental set of features which work quite well
     training_variables_new = 	['decision_gar','buy_age', 'YM', 'male']
-
+    # found to produce best results even with what feels like quite some noise, additional features thus seem relevant
     training_variables_large = 	['dd_freq_m', 'dd_freq_q', 'dd_freq_h', 'phi', 'decision_gar',
                                 'dd_pcode_H', 'dd_pcode_M', 'dd_pcode_L', 'fa', 'buy_age', 'YM', 'male', 'dd_sales_D',
                                 'dd_scheme_no', 'yield6', 'yield12', 'yield18', 'yield24', 'yield30', 'yield36', 'yield42',
@@ -135,29 +120,70 @@ def create_training_set(small = True):
                                 'yield240', 'yield246', 'yield252', 'yield258', 'yield264', 'yield270', 'yield276', 'yield282',
                                 'yield288', 'yield294', 'yield300']
 
+    # the training matrix which will have all features column wise, dimensions = (number of records) X (number of features)
     training_X = []
+    # the ground truth or target variable containing rates, dimensions = (number of records) X 1
     training_Y = csv_data['rate']
+    # assign which features to populate training_X with dependent upon type entered as argumwnt
+    try:
+        if training_variables_type == 1:
+            training_X = csv_data['phi']
+            training_variables = training_variables_smallest
+        else:
+            training_X = csv_data['external']
+            if training_variables_type == 2:
+                training_variables = training_variables_small
+            elif training_variables_type == 3:
+                training_variables = training_variables_new
+            elif training_variables_type == 4:
+                training_variables = training_variables_large
+            else:
+                raise ValueError('Type can only be between 1 - 4, type specified: ', training_variables_type)
+    except ValueError as e:
+        print(e.args)
 
-    training_X = csv_data['external']
-    #training_X = csv_data['phi']
     for i in training_variables_large:
         training_X = np.column_stack((training_X, csv_data[i]))
 
-    #Accuracy improved when data was scaled to (0,1)
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    rescaledX = scaler.fit_transform(training_X)
+    # Standardize features by removing the mean and scaling to unit variance
+    # Accuracy improved when this was done.
+    scaled_X = scaler.fit_transform(training_X)
 
-    scaler = Normalizer().fit(training_X)
-    normalizedX = scaler.transform(training_X)
-
-
-    scaled_X = sc.fit_transform(training_X)
+    # Split the data into two sets, of 92% training set versus 8% test set,
+    # this is done to check the accuracy of the data on unseen data
+    # it may make sense to also plot how the operation does on training data to measure training Accuracy
     X_train, X_test, y_train, y_test = train_test_split(scaled_X, training_Y, test_size = 0.08, random_state = 0)
 
     return (X_train, X_test, y_train, y_test)
 
 def prediction(X_train, X_test, y_train, y_test):
-    global sc
+    """
+    My numpydoc description of a kind
+    of very exhautive numpydoc format docstring.
+
+    Parameters
+    ----------
+    first : array_like
+        the 1st param name `first`
+    second :
+        the 2nd param
+    third : {'value', 'other'}, optional
+        the 3rd param, by default 'value'
+
+    Returns
+    -------
+    string
+        a value in a string
+
+    Raises
+    ------
+    KeyError
+        when a key error
+    OtherError
+        when an other error
+    """
+
+    global scaler
     # activation = ['relu']
     # solver = ['adam']
     # alpha=np.arange(0.0001, 0.0011, 0.0001)
@@ -331,9 +357,9 @@ def prediction(X_train, X_test, y_train, y_test):
     for i in plot_variables_10:
         X_plot_10 = np.column_stack((X_plot_10, i))
 
-    X_plot_0 = sc.transform(X_plot_0)
-    X_plot_5 = sc.transform(X_plot_5)
-    X_plot_10 = sc.transform(X_plot_10)
+    X_plot_0 = scaler.transform(X_plot_0)
+    X_plot_5 = scaler.transform(X_plot_5)
+    X_plot_10 = scaler.transform(X_plot_10)
 
     plot_prediction_0 = nn.predict(X_plot_0)
     plot_prediction_5 = nn.predict(X_plot_5)
