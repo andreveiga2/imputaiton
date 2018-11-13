@@ -164,8 +164,7 @@ def create_training_set(training_variables_type = 4, split_percentage = 0.08):
 
 def prediction(X_train, X_test, y_train, y_test):
     """
-    My numpydoc description of a kind
-    of very exhautive numpydoc format docstring.
+    Function to fit a model for given
 
     Parameters
     ----------
