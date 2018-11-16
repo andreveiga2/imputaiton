@@ -73,7 +73,7 @@ def load_data(filename):
 # operation during both training and testing time
 scaler = StandardScaler()
 
-def create_training_set(training_variables_type = 4, split_percentage = 0.08):
+def create_training_set(training_variables_type = 3, split_percentage = 0.08):
     """
     Function to split csv data into a training X and Y and test X and Y
     Standardize features by removing the mean and scaling to unit variance
@@ -163,7 +163,6 @@ def create_training_set(training_variables_type = 4, split_percentage = 0.08):
     sqrt_prod_decision_phi = (np.multiply((np.array(csv_data['decision_gar'])+1),csv_data['phi']))**0.3
     sqrt_sum_decision_phi = ((np.array(csv_data['decision_gar'])+1) + csv_data['phi'])**0.3
 
-    #complex_features = [sqrt_decision_gar, sqrt_phi, sqrt_prod_decision_phi, sqrt_sum_decision_phi]
     complex_features = [sqrt_decision_gar, sqrt_phi, sqrt_sum_decision_phi]
     for i in complex_features:
         training_X = np.column_stack((training_X, i))
@@ -173,7 +172,7 @@ def create_training_set(training_variables_type = 4, split_percentage = 0.08):
     # Accuracy improved when this was done.
     scaled_X = scaler.fit_transform(training_X)
 
-    # Split the data into two sets, of 92% training set versus 8% test set,
+    # Split the data into two sets, of 90% training set versus 10% test set,
     # this is done to check the accuracy of the data on unseen data
     # it may make sense to also plot how the operation does on training data to measure training Accuracy
     X_train, X_test, y_train, y_test = train_test_split(scaled_X, training_Y, test_size = split_percentage, random_state = 0, shuffle=False)
@@ -328,7 +327,7 @@ def create_dummy_set(training_variables_type = 3, plot_type = 2):
         # phi will dictate the length for each array
         # In this case shape of phi is 38230 X 1
         dummy_set['phi'] = np.array(sorted(csv_data['phi']))
-        #print phi.shape
+        #print(phi.shape)
 
         # will need to set initializations based on plot_type
         dummy_set['external'] = np.array([0]*38230)
@@ -653,16 +652,11 @@ def grid_search_mlp(X_train, y_train, X_test, y_test, activation = ['relu'], sol
                             optimal_params['alpha'] = alpha_m
                         i+=1
 
-                        print('Prediction Error', i, ' / ', total_choices, ' (',activation_i, solver_j, hidden_size_k, learning_rate_l, alpha_m, acc)
-                        print('Lowest Error: (',optimal_params['activation'], optimal_params['solver'], optimal_params['hidden_size'], optimal_params['learning_rate'], optimal_params['alpha'], optimal_error)
+                        # To keep track of progress, uncomment the following lines
+                        # print('Prediction Error', i, ' / ', total_choices, ' (',activation_i, solver_j, hidden_size_k, learning_rate_l, alpha_m, acc)
+                        # print('Lowest Error: (',optimal_params['activation'], optimal_params['solver'], optimal_params['hidden_size'], optimal_params['learning_rate'], optimal_params['alpha'], optimal_error)
 
-    # If you wish to plot prediction vs ground truth during grid_search
-    #fig, ax = plt.subplots()
-    #ax.scatter(y_test, predicted, edgecolors=(0, 0, 0))
-    #ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'k--', lw=4)
-    #ax.set_xlabel('Measured')
-    #ax.set_ylabel('Predicted')
-    #plt.show()
+    print('Lowest Error: (',optimal_params['activation'], optimal_params['solver'], optimal_params['hidden_size'], optimal_params['learning_rate'], optimal_params['alpha'], optimal_error)
     return optimal_params
 
 
@@ -700,15 +694,15 @@ def prediction(X_train, y_train, X_test, y_test, model_type = 'MLPRegressor'):
     optimal_params = {}
     # call to grid search for optimal_params
     # optimal_params = grid_search_mlp(X_train, y_train, X_test, y_test, activation = ['relu', 'logistic'], solver = ['adam', 'lbfgs'], alpha = np.arange(0.0001, 0.0011, 0.0001), hidden_size = [10, 30, 50, 70, 100, 120], learning_rate = np.arange(0.01,0.2,0.01))
-    optimal_params = grid_search_mlp(X_train, y_train, X_test, y_test, activation = ['relu'], solver = ['adam'], alpha = np.arange(0.0001, 0.0015, 0.0001), hidden_size = [100], learning_rate = np.arange(0.01,0.14,0.01))
+    # optimal_params = grid_search_mlp(X_train, y_train, X_test, y_test, activation = ['relu'], solver = ['adam'], alpha = np.arange(0.0001, 0.0015, 0.0001), hidden_size = [100], learning_rate = np.arange(0.01,0.14,0.01))
     # ('Lowest Error: (', 'relu', 'adam', 5, 0.09, 0.0008, 7.464835648006808) best value that I have. Must store.
     # if you already know optimal_params store them here, grid search is very time consuming
     # optimal_params for each experiment will be in jupyter
-    #optimal_params['activation'] = 'relu'
-    #optimal_params['solver'] = 'adam'
-    #optimal_params['hidden_size'] = 5
-    #optimal_params['learning_rate'] = 0.09
-    #optimal_params['alpha'] = 0.0008
+    optimal_params['activation'] = 'relu'
+    optimal_params['solver'] = 'adam'
+    optimal_params['hidden_size'] = 5
+    optimal_params['learning_rate'] = 0.09
+    optimal_params['alpha'] = 0.0008
 
     # call MLP with optimal_params
     nn = MLPRegressor(
