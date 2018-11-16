@@ -482,7 +482,6 @@ def prediction(X_train, y_train, X_test, y_test):
     """
 
     # This is done to use the same scaler as the global one so that scaling operations
-    # remains consistent
     global scaler
     optimal_params = {}
     optimal_params['activation'] = 'relu'
