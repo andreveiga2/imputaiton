@@ -177,10 +177,6 @@ def create_final_test_set(training_variables_type = 4):
     """
     global scaler
 
-    # only use phi and decision_gar as features
-    training_variables_smallest = ['decision_gar']
-    # use the first few features
-    training_variables_small = ['decision_gar','buy_age', 'YM', 'male']
     # experimental set of features which work quite well
     training_variables_new = 	['decision_gar', 'buy_age', 'YM', 'male', 'yield6', 'yield12', 'yield18', 'yield24', 'yield30', 'yield36', 'yield42',
                                 'yield48', 'yield54', 'yield60', 'yield66', 'yield72', 'yield78', 'yield84', 'yield90',
@@ -190,41 +186,13 @@ def create_final_test_set(training_variables_type = 4):
                                 'yield240', 'yield246', 'yield252', 'yield258', 'yield264', 'yield270', 'yield276', 'yield282',
                                 'yield288', 'yield294', 'yield300']
 
-    # found to produce best results even with what feels like quite some noise, additional features thus seem relevant
-    training_variables_large = 	['dd_freq_m', 'dd_freq_q', 'dd_freq_h', 'phi', 'decision_gar',
-                                'dd_pcode_H', 'dd_pcode_M', 'dd_pcode_L', 'fa', 'buy_age', 'YM', 'male', 'dd_sales_D',
-                                'dd_scheme_no', 'yield6', 'yield12', 'yield18', 'yield24', 'yield30', 'yield36', 'yield42',
-                                'yield48', 'yield54', 'yield60', 'yield66', 'yield72', 'yield78', 'yield84', 'yield90',
-                                'yield96', 'yield102', 'yield108', 'yield114', 'yield120', 'yield126', 'yield132', 'yield138',
-                                'yield144', 'yield150', 'yield156', 'yield162', 'yield168', 'yield174', 'yield180', 'yield186',
-                                'yield192', 'yield198', 'yield204', 'yield210', 'yield216', 'yield222', 'yield228', 'yield234',
-                                'yield240', 'yield246', 'yield252', 'yield258', 'yield264', 'yield270', 'yield276', 'yield282',
-                                'yield288', 'yield294', 'yield300']
-
-
     # the training matrix which will have all features column wise, dimensions = (number of records) X (number of features)
     training_X = []
     # the ground truth or target variable containing rates, dimensions = (number of records) X 1
     training_Y = csv_data['rate']
     # assign which features to populate training_X with dependent upon type entered as argumwnt
-    try:
-        if training_variables_type == 1:
-            training_X = csv_data['phi']
-            training_variables = training_variables_smallest
-        else:
-            training_X = csv_data['external']
-            if training_variables_type == 2:
-                training_X = csv_data['phi']
-                training_variables = training_variables_small
-            elif training_variables_type == 3:
-                training_X = csv_data['phi']
-                training_variables = training_variables_new
-            elif training_variables_type == 4:
-                training_variables = training_variables_large
-            else:
-                raise ValueError('Type can only be between 1 - 4, type specified: ', training_variables_type)
-    except ValueError as e:
-        print(e.args)
+    training_X = csv_data['phi']
+    training_variables = training_variables_new
 
     decision_0 = np.array([0]*38230)
     decision_5 = np.array([5]*38230)
@@ -258,7 +226,7 @@ def create_final_test_set(training_variables_type = 4):
     return (X_train, X_test, y_train, y_test)
 
 
-def create_dummy_set(training_variables_type = 3, plot_type = 2):
+def create_dummy_set(training_variables_type = 3, plot_type = 2, male = 0, age = 50, time = 2006.583 ):
     """
     Function to create dummy_sets for various functions based on training_variable_type
 
@@ -296,9 +264,9 @@ def create_dummy_set(training_variables_type = 3, plot_type = 2):
         #print(phi.shape)
 
         # will need to set initializations based on plot_type
-        dummy_set['buy_age'] = np.array([50]*38230)
-        dummy_set['YM'] = np.array([2006.583]*38230)
-        dummy_set['male'] = np.array([0]*38230)
+        dummy_set['buy_age'] = np.array([age]*38230)
+        dummy_set['YM'] = np.array([time]*38230)
+        dummy_set['male'] = np.array([male]*38230)
 
         dummy_set['decision_gar_0'] = np.array([0]*38230)
         dummy_set['decision_gar_5'] = np.array([5]*38230)
@@ -410,6 +378,15 @@ def create_dummy_set(training_variables_type = 3, plot_type = 2):
 
 def plot(trained_model = None, X_test = [], y_test = [], phi = [], plot_prediction_0 = [], plot_prediction_5 = [],
     plot_prediction_10 = [], plot_type = 1):
+    '''
+    Graphs Required,
+    Done :In the real data, predicted and observed data and the 45 degree line
+    Done: In the real data, average absolute percent error (this is just a number, but put it as the title of the graph above)
+    Then, the graphs with the 3 curves you’ve been showing me!of rate as a function of phi, where everything is held fixed (time, but age, male etc)
+    Then I’d like you to add this graph: take the average value of rate over all the phis, and see how it changes with time (YM)
+    Also, compute the share of real data obs where the monotonicity holds and put it on top of one of the graphs
+    And I’d need you to compute these numbers/graphs for each group, that is, each combination of male==1,0 and buy_age==60,65
+    '''
     """
     Function to plot a set of graphs using trained_model and test data
     For some graphs, we will need dummy data for which a create_dummy_set() will be called from this code
@@ -433,25 +410,45 @@ def plot(trained_model = None, X_test = [], y_test = [], phi = [], plot_predicti
     ValueError
         when a model_type that has not been implemented is input
     """
-    if plot_type == 1:
-        predicted = trained_model.predict(X_test)
-        fig, ax = plt.subplots()
-        ax.scatter(y_test, predicted, edgecolors=(0, 0, 0))
-        ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'k--', lw=4)
-        ax.set_xlabel('Measured')
-        ax.set_ylabel('Predicted')
-        plt.show()
-        acc = accuracy(y_test,predicted)
-    elif plot_type == 2:
-        fig, ax = plt.subplots()
-        ax.plot(phi, plot_prediction_0,label = 'decision_0')
-        ax.plot(phi, plot_prediction_5,label = 'decision_5')
-        ax.plot(phi, plot_prediction_10,label = 'decision_10')
-        ax.legend(loc='best')
-        #ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'k--', lw=4)
-        ax.set_xlabel('phi')
-        ax.set_ylabel('Predicted')
-        plt.show()
+
+    fig, ax = plt.subplots(1, 2, sharex=False, sharey=False)
+    inchesForMainPlotPart = 7; inchesForLegend = 0.6; percForMain = inchesForMainPlotPart*1.0/(inchesForMainPlotPart+inchesForLegend); percForLegend = 1.-percForMain
+    fig.set_size_inches(15,inchesForMainPlotPart+inchesForLegend); #changes width/height of the figure. VERY IMPORTANT
+    fig.set_dpi(100); #changes width/height of the figure.
+    fig.subplots_adjust(left=0.05, bottom = 0.1*percForMain + percForLegend, right=0.98, top=0.92*percForMain+percForLegend, wspace=0.25, hspace=0.4*percForMain)
+    fig.suptitle("Diagonostic Report" , fontsize=18)#, fontweight='bold')
+    sub_plot_title_size = 12
+
+    predicted = trained_model.predict(X_test)
+    ax[0].scatter(y_test, predicted, edgecolors=(0, 0, 0))
+    ax[0].plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'k--', lw=4)
+    ax[0].set_ylabel('Predicted')
+    ax[0].set_xlabel('Measured')
+    acc = accuracy(y_test,predicted)
+    ax[0].set_title("Predicted vs Measured, Error: "+str(acc), fontsize=sub_plot_title_size, y=1.022)
+
+    # CHANGE: In dummy set, add option for changing male and age group
+    (X_plot_0, X_plot_5, X_plot_10, dummy_set) = create_dummy_set(training_variables_type = 3, plot_type = 2)
+
+    plot_prediction_0 = trained_model.predict(X_plot_0)
+    plot_prediction_5 = trained_model.predict(X_plot_5)
+    plot_prediction_10 = trained_model.predict(X_plot_10)
+
+    # counter for number of predictions for which r_0 < r_5 < r1_0
+    count = 0
+    for i in np.arange(len(plot_prediction_0)):
+        if not ((plot_prediction_0[i] > plot_prediction_5[i]) and (plot_prediction_5[i] > plot_prediction_10[i])):
+                count+=1
+
+
+    ax[1].plot(dummy_set['phi'], plot_prediction_0,label = 'decision_0')
+    ax[1].plot(dummy_set['phi'], plot_prediction_5,label = 'decision_5')
+    ax[1].plot(dummy_set['phi'], plot_prediction_10,label = 'decision_10')
+    ax[1].legend(loc='best')
+    ax[1].set_xlabel('phi')
+    ax[1].set_ylabel('Predicted Rates')
+    ax[1].set_title(str(count)+" out of "+str(len(plot_prediction_0))+" predictions have NOT (r_0 > r_5 > r_10) ", fontsize=sub_plot_title_size, y=1.022)
+    fig.savefig('report.png')
 
 def prediction(X_train, y_train, X_test, y_test):
     """
@@ -498,23 +495,18 @@ def prediction(X_train, y_train, X_test, y_test):
     # fit model on training data
     n = nn.fit(X_train, y_train)
 
-    (X_plot_0, X_plot_5, X_plot_10, dummy_set) = create_dummy_set(training_variables_type = 3, plot_type = 2)
-
-    plot_prediction_0 = nn.predict(X_plot_0)
-    plot_prediction_5 = nn.predict(X_plot_5)
-    plot_prediction_10 = nn.predict(X_plot_10)
-
-    # counter for number of predictions for which r_0 < r_5 < r1_0
-    count = 0
-    for i in np.arange(len(plot_prediction_0)):
-        if not ((plot_prediction_0[i] > plot_prediction_5[i]) and (plot_prediction_5[i] > plot_prediction_10[i])):
-                count+=1
-
-    print(str(count)+" out of "+str(len(plot_prediction_0))+" predictions have NOT (r_0 > r_5 > r_10) ")
-
-    #plotting Measured vs predictor
-    plot(trained_model = nn, X_test = X_test, y_test = y_test, plot_type = 1)
-
-    # Predicting rates vs phi with everything constant
-    plot(phi = dummy_set['phi'], plot_prediction_0 = plot_prediction_0, plot_prediction_5 = plot_prediction_5,
-        plot_prediction_10 = plot_prediction_10, plot_type = 2)
+    # (X_plot_0, X_plot_5, X_plot_10, dummy_set) = create_dummy_set(training_variables_type = 3, plot_type = 2)
+    #
+    # plot_prediction_0 = nn.predict(X_plot_0)
+    # plot_prediction_5 = nn.predict(X_plot_5)
+    # plot_prediction_10 = nn.predict(X_plot_10)
+    #
+    # # counter for number of predictions for which r_0 < r_5 < r1_0
+    # count = 0
+    # for i in np.arange(len(plot_prediction_0)):
+    #     if not ((plot_prediction_0[i] > plot_prediction_5[i]) and (plot_prediction_5[i] > plot_prediction_10[i])):
+    #             count+=1
+    #
+    # print(str(count)+" out of "+str(len(plot_prediction_0))+" predictions have NOT (r_0 > r_5 > r_10) ")
+    #
+    plot(trained_model = nn, X_test = X_test, y_test = y_test)
