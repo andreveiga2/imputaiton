@@ -141,7 +141,7 @@ def create_training_set():
     # Split the data into two sets, of 90% training set versus 10% test set,
     # this is done to check the accuracy of the data on unseen data
     # it may make sense to also plot how the operation does on training data to measure training Accuracy
-    X_train, X_test, y_train, y_test = train_test_split(scaled_X, training_Y, test_size = 0.1, random_state = 0, shuffle=False)
+    X_train, X_test, y_train, y_test = train_test_split(scaled_X, training_Y, test_size = 0.1, random_state = 1, shuffle=False)
 
     return (X_train, X_test, y_train, y_test)
 
@@ -521,19 +521,20 @@ def prediction(X_train, y_train, X_test, y_test):
 
     # This is done to use the same scaler as the global one so that scaling operations
     global scaler
-    optimal_params = grid_search_mlp(X_train, y_train, X_test, y_test, activation = ['relu'], solver = ['adam'], alpha = np.arange(0.0001, 0.0015, 0.0001), hidden_size = [100,200,300,400,500,600,700,800,900,1000], learning_rate = np.arange(0.01,0.14,0.01))
+    #optimal_params = grid_search_mlp(X_train, y_train, X_test, y_test, activation = ['relu'], solver = ['adam'], alpha = np.arange(0.0001, 0.0015, 0.0001), hidden_size = [100,200,300,400,500,600,700,800,900,1000], learning_rate = np.arange(0.01,0.14,0.01))
 
-    # optimal_params = {}
-    # optimal_params['activation'] = 'relu'
-    # optimal_params['solver'] = 'adam'
-    # optimal_params['hidden_size'] = 500
-    # optimal_params['learning_rate'] = 0.09
-    # optimal_params['alpha'] = 0.0008
+    optimal_params = {}
+    optimal_params['activation'] = 'relu'
+    optimal_params['solver'] = 'adam'
+    optimal_params['hidden_size'] = 500
+    optimal_params['learning_rate'] = 0.04
+    optimal_params['alpha'] = 0.0014000000000000002
 
+    #Lowest Error: ( relu adam 500 0.04 0.0014000000000000002 3.5272681821052982
     # call MLP with optimal_params
     nn = MLPRegressor(
     hidden_layer_sizes=optimal_params['hidden_size'], activation=optimal_params['activation'], solver=optimal_params['solver'],
-    learning_rate_init=optimal_params['learning_rate'], shuffle=True, random_state=0, tol = 0.0001, alpha = optimal_params['alpha'])
+    learning_rate_init=optimal_params['learning_rate'], shuffle=True, random_state=0, alpha = optimal_params['alpha'])
 
     # fit model on training data
     n = nn.fit(X_train, y_train)
